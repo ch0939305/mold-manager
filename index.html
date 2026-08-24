@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🏭 模具管理系統</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
@@ -28,14 +29,19 @@ body.dark{
   --danger:#f87171;--danger-grad:linear-gradient(135deg,#dc2626,#ea580c);
 }
 body{font-family:'Microsoft JhengHei','微軟正黑體','PingFang TC','Heiti TC','Noto Sans TC','DFHei',sans-serif;background:var(--bg-grad);background-attachment:fixed;background-color:var(--bg);color:var(--text);min-height:100vh;transition:background-color .35s,color .35s;line-height:1.6;padding:32px 18px;display:flex;justify-content:center}
-.container{max-width:1180px;width:100%}
-.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:14px}
+.container{max-width:1280px;width:100%}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:14px}
 .header h1{font-size:26px;font-weight:800;background:linear-gradient(90deg,#0a84ff,#8b5cf6 50%,#ec4899);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.header-right{display:flex;align-items:center;gap:12px}
+.header-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .stat-chip{padding:7px 16px;border-radius:999px;background:var(--accent-light);color:var(--accent);font-weight:700;font-size:14px}
+.cloud-chip{padding:7px 16px;border-radius:999px;font-weight:700;font-size:14px;background:rgba(16,185,129,.12);color:#059669}
+body.dark .cloud-chip{color:#34d399}
+.cloud-chip.off{background:rgba(239,68,68,.12);color:var(--danger)}
 .theme-btn{height:42px;padding:0 20px;border-radius:14px;border:none;background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .25s;box-shadow:0 6px 16px rgba(245,158,11,.4);display:inline-flex;align-items:center;gap:9px}
 .theme-btn:hover{transform:translateY(-2px) scale(1.04);filter:brightness(1.08)}
 body.dark .theme-btn{background:linear-gradient(135deg,#0a84ff,#8b5cf6);box-shadow:0 6px 16px rgba(99,102,241,.4)}
+.banner{display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:14px;margin-bottom:18px;background:rgba(245,158,11,.12);border:1.5px solid rgba(245,158,11,.4);color:#b45309;font-weight:600;font-size:14.5px;line-height:1.6}
+body.dark .banner{color:#fbbf24}
 .card{position:relative;overflow:hidden;background:var(--card);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:20px;padding:26px 28px;box-shadow:var(--shadow);border:1px solid var(--border)}
 .card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;z-index:1;background:var(--pv-grad)}
 .toolbar{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
@@ -45,7 +51,7 @@ body.dark .theme-btn{background:linear-gradient(135deg,#0a84ff,#8b5cf6);box-shad
 .search-input{flex:1;min-width:220px;padding:11px 18px;border:1.5px solid var(--border2);border-radius:12px;background:transparent;color:var(--text);font-size:15px;outline:none;transition:border-color .2s;font-family:inherit}
 .search-input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(124,58,237,.12)}
 .table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:1280px}
+table{width:100%;border-collapse:collapse;min-width:1320px}
 th{text-align:left;font-size:13px;font-weight:700;color:var(--text3);letter-spacing:.5px;padding:10px 12px;border-bottom:2px solid var(--border2);white-space:nowrap}
 th .th-ico{margin-right:4px}
 td{padding:6px 8px;border-bottom:1px solid var(--border2);vertical-align:middle}
@@ -91,7 +97,7 @@ body.dark .chip-pdf{color:#fbbf24}
 .mini-del{background:rgba(239,68,68,.12);color:var(--danger)}
 .mini-btn:hover{filter:brightness(.95);transform:translateY(-1px)}
 .view-modal iframe{flex:1;width:100%;border:none;background:#525659}
-.toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);padding:13px 26px;border-radius:999px;color:#fff;font-weight:700;font-size:14.5px;z-index:99;box-shadow:0 10px 30px rgba(0,0,0,.3);animation:pop .25s ease}
+.toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);padding:13px 26px;border-radius:999px;color:#fff;font-weight:700;font-size:14.5px;z-index:99;box-shadow:0 10px 30px rgba(0,0,0,.3);animation:pop .25s ease;max-width:92vw;text-align:center}
 .toast.ok{background:linear-gradient(135deg,#059669,#10b981)}
 .toast.err{background:var(--danger-grad)}
 @media(max-width:560px){body{padding:20px 12px}.card{padding:20px 16px}.header h1{font-size:22px}.view-modal{height:82vh}}
@@ -102,15 +108,21 @@ body.dark .chip-pdf{color:#fbbf24}
   <header class="header">
     <h1>🏭 模具管理系統</h1>
     <div class="header-right">
+      <span class="cloud-chip" id="cloudChip">☁️ 連線中…</span>
       <span class="stat-chip" id="statChip">共 0 筆</span>
       <button class="theme-btn" id="themeBtn" title="切換日間／夜間模式"><span id="themeIcon">🌙</span><span id="themeText">夜間模式</span></button>
     </div>
   </header>
 
+  <div class="banner" id="dbBanner" hidden>
+    <span>⚠️</span>
+    <span>尚未連上雲端資料庫——請先到 Supabase Dashboard 的「SQL Editor」貼上執行桌面上的《Supabase雲端設定.sql》，完成後重新整理此頁。</span>
+  </div>
+
   <div class="card">
     <div class="toolbar">
       <button class="btn btn-add" id="addBtn">＋ 新增一行</button>
-      <input id="search" class="search-input" placeholder="🔍 搜尋日期／編號／位置／產品…（點格子直接修改，自動保存）">
+      <input id="search" class="search-input" placeholder="🔍 搜尋日期／編號／類別／產品…（點格子直接修改，自動同步雲端）">
     </div>
     <div class="table-wrap">
       <table>
@@ -130,7 +142,7 @@ body.dark .chip-pdf{color:#fbbf24}
         </thead>
         <tbody id="tbody"></tbody>
       </table>
-      <div class="empty" id="emptyMsg">📭 目前沒有資料——點上方「＋ 新增一行」開始填寫，格子裡直接打字即可自動記錄</div>
+      <div class="empty" id="emptyMsg">📭 目前沒有資料——點上方「＋ 新增一行」開始填寫，資料會自動存到雲端</div>
     </div>
   </div>
 </div>
@@ -153,7 +165,7 @@ body.dark .chip-pdf{color:#fbbf24}
     <div class="modal-head">
       <h2 id="viewTitle">預覽</h2>
       <div class="tools">
-        <a class="btn btn-add" id="dlBtn" download>⬇️ 下載</a>
+        <a class="btn btn-add" id="dlBtn" download target="_blank" rel="noopener">⬇️ 下載</a>
         <button class="icon-btn" id="viewClose">✕</button>
       </div>
     </div>
@@ -164,8 +176,15 @@ body.dark .chip-pdf{color:#fbbf24}
 <div class="toast ok" id="toast" hidden></div>
 
 <script>
-const LS_KEY='moldManagerRecords';
-let records=[],currentRec=null,objUrl=null;
+const SB_URL='https://xkhuhpfaqqtkxusilvzz.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhraHVocGZhcXF0a3h1c2lsdnp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MjUzOTYsImV4cCI6MjEwMzEwMTM5Nn0.Vm5Q0Cqg8paprJzk70v1y1Uu6okt86qVh0nKW2-gTZE';
+const LS_CACHE='moldManagerCache';
+const BUCKET='mold-pdfs';
+
+let sb=null;
+try{sb=supabase.createClient(SB_URL,SB_KEY);}catch(e){}
+
+let records=[],currentRec=null,cloudOk=false;
 const $=id=>document.getElementById(id);
 
 let dbPromise=null;
@@ -180,24 +199,14 @@ function dbOpen(){
   return dbPromise;
 }
 async function dbPut(k,v){const d=await dbOpen();return new Promise((res,rej)=>{const tx=d.transaction('pdfs','readwrite');tx.objectStore('pdfs').put(v,k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});}
-async function dbGet(k){const d=await dbOpen();return new Promise((res,rej)=>{const rq=d.transaction('pdfs','readonly').objectStore('pdfs').get(k);rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error);});}
-async function dbDel(k){const d=await dbOpen();return new Promise((res,rej)=>{const tx=d.transaction('pdfs','readwrite');tx.objectStore('pdfs').delete(k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});}
 
-function load(){
-  try{records=JSON.parse(localStorage.getItem(LS_KEY))||[];}catch(e){records=[];}
-  if(!records.length&&!localStorage.getItem('moldMigrated')){
-    try{
-      const old=JSON.parse(localStorage.getItem('moldAppData')||'[]');
-      if(Array.isArray(old)&&old.length){
-        records=old.map(p=>({id:uid('m'),date:String(p.date||''),code:String(p.moldId||''),type:String(p.moldType||p.moldClass||''),location:String(p.position||''),size:String(p.size||''),product:String(p.productName||''),partNo:String(p.partNo||p.productNo||''),note:'',pdfs:[]}));
-        persist();
-        setTimeout(()=>toast('已從「模具管理2版」自動匯入 '+records.length+' 筆舊資料'),800);
-      }
-    }catch(e){}
-    localStorage.setItem('moldMigrated','1');
-  }
+function mirror(){try{localStorage.setItem(LS_CACHE,JSON.stringify(records));}catch(e){}}
+function loadCache(){try{return JSON.parse(localStorage.getItem(LS_CACHE))||[];}catch(e){return[];}}
+
+function dbRowToLocal(r){
+  return {id:r.id,date:r.date||'',code:r.code||'',type:r.type||'',location:r.location||'',size:r.size||'',product:r.product||'',partNo:r.part_no||'',note:r.note||'',pdfs:Array.isArray(r.pdfs)?r.pdfs:[]};
 }
-function persist(){localStorage.setItem(LS_KEY,JSON.stringify(records));}
+
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const fmtSize=n=>n>=1048576?(n/1048576).toFixed(1)+' MB':(n/1024).toFixed(0)+' KB';
@@ -207,7 +216,58 @@ let toastTimer=null;
 function toast(msg,ok=true){
   const t=$('toast');
   t.textContent=msg;t.className='toast '+(ok?'ok':'err');t.hidden=false;
-  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.hidden=true,2400);
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.hidden=true,2600);
+}
+
+function setCloud(ok,msg){
+  const c=$('cloudChip');
+  cloudOk=ok;
+  c.classList.toggle('off',!ok);
+  c.textContent=msg||(ok?'☁️ 雲端已連線':'⚠️ 未連線（本機模式）');
+  $('dbBanner').hidden=ok;
+}
+
+async function loadAll(){
+  if(!sb){setCloud(false);records=loadCache();render();return;}
+  try{
+    const {data,error}=await sb.from('molds').select('*').order('created_at',{ascending:false});
+    if(error)throw error;
+    records=(data||[]).map(dbRowToLocal);
+    mirror();
+    setCloud(true);
+    await migrateIfNeeded();
+  }catch(e){
+    setCloud(false);
+    records=loadCache();
+    render();
+    return;
+  }
+  render();
+}
+
+async function migrateIfNeeded(){
+  if(records.length===0&&!localStorage.getItem('cloudMigrated')){
+    localStorage.setItem('cloudMigrated','1');
+    let olds=loadCache().filter(o=>o.id&&String(o.id).indexOf('m')===0);
+    let fromLocal=false;
+    if(!olds.length){
+      try{
+        const md=JSON.parse(localStorage.getItem('moldAppData')||'[]');
+        olds=(md||[]).map(p=>({date:String(p.date||''),code:String(p.moldId||''),type:String(p.moldType||p.moldClass||''),location:String(p.position||''),size:String(p.size||''),product:String(p.productName||''),partNo:String(p.partNo||p.productNo||''),note:''}));
+      }catch(e){}
+      fromLocal=true;
+    }
+    olds=olds.filter(o=>o.code||o.product||o.location);
+    if(olds.length){
+      const payload=olds.map(o=>({date:o.date||'',code:o.code||'',type:o.type||'',location:o.location||'',size:o.size||'',product:o.product||'',part_no:o.partNo||'',note:o.note||'',pdfs:[]}));
+      const {data,error}=await sb.from('molds').insert(payload).select();
+      if(!error&&data){
+        records=data.map(dbRowToLocal);
+        mirror();
+        setTimeout(()=>toast('已將本機'+(fromLocal?'舊系統':'暫存')+'的 '+data.length+' 筆資料上傳到雲端'),500);
+      }
+    }
+  }
 }
 
 function filtered(){
@@ -231,10 +291,28 @@ function render(){
   }).join('');
 }
 
-let saveTimer=null;
-function queueSave(){
-  clearTimeout(saveTimer);
-  saveTimer=setTimeout(()=>{persist();},400);
+let dirty={},dirtyTimer=null;
+function queueSave(){clearTimeout(dirtyTimer);dirtyTimer=setTimeout(flushDirty,800);}
+async function flushDirty(){
+  const jobs=Object.entries(dirty);
+  dirty={};
+  if(!jobs.length||!cloudOk)return;
+  for(const [id,payload] of jobs){
+    try{
+      const {error}=await sb.from('molds').update(payload).eq('id',id);
+      if(error)throw error;
+      setCloud(true);
+    }catch(e){
+      setCloud(false,'⚠️ 同步失敗：'+e.message);
+      toast('儲存失敗：'+e.message,false);
+    }
+  }
+}
+function markDirty(id,field,value){
+  const dbField={partNo:'part_no'}[field]||field;
+  dirty[id]=dirty[id]||{};
+  dirty[id][dbField]=value;
+  queueSave();
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
@@ -247,14 +325,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   applyTheme();
   $('themeBtn').onclick=()=>{theme=theme==='light'?'dark':'light';localStorage.setItem('moldTheme',theme);applyTheme();};
 
-  $('addBtn').onclick=()=>{
-    const rec={id:uid('m'),date:today(),code:'',location:'',size:'',product:'',partNo:'',pdfs:[]};
-    records.unshift(rec);
-    persist();render();
-    const firstCell=$('tbody').querySelector(`tr[data-id="${rec.id}"] .cell`);
-    if(firstCell)firstCell.focus();
-    toast('已新增一行，直接在格子上填寫');
-  };
+  $('addBtn').onclick=addRow;
 
   $('tbody').addEventListener('input',e=>{
     const cell=e.target.closest('.cell');
@@ -263,17 +334,16 @@ document.addEventListener('DOMContentLoaded',()=>{
     const rec=records.find(r=>r.id===tr.dataset.id);
     if(!rec)return;
     rec[cell.dataset.k]=cell.textContent.trim();
-    queueSave();
+    markDirty(rec.id,cell.dataset.k,rec[cell.dataset.k]);
   });
 
   $('tbody').addEventListener('change',e=>{
     const sel=e.target.closest('.type-sel');
     if(!sel)return;
-    const tr=sel.closest('tr');
-    const rec=records.find(r=>r.id===tr.dataset.id);
+    const rec=records.find(r=>r.id===sel.closest('tr').dataset.id);
     if(!rec)return;
     rec.type=sel.value;
-    queueSave();
+    markDirty(rec.id,'type',sel.value);
   });
 
   $('tbody').addEventListener('keydown',e=>{
@@ -290,15 +360,53 @@ document.addEventListener('DOMContentLoaded',()=>{
   });
 
   $('search').addEventListener('input',render);
-
   $('pdfInput').addEventListener('change',handleFiles);
   $('pdfClose').onclick=closePdfModal;
   $('viewClose').onclick=closeView;
   $('pdfModal').addEventListener('click',e=>{if(e.target===$('pdfModal'))closePdfModal();});
   $('viewModal').addEventListener('click',e=>{if(e.target===$('viewModal'))closeView();});
 
-  load();render();
+  loadAll();
 });
+
+async function addRow(){
+  const temp={date:today(),code:'',type:'',location:'',size:'',product:'',part_no:'',note:'',pdfs:[]};
+  let rec;
+  if(cloudOk){
+    const {data,error}=await sb.from('molds').insert(temp).select().single();
+    if(error){setCloud(false,error.message);toast('新增失敗：'+error.message,false);return;}
+    rec=dbRowToLocal(data);
+  }else{
+    rec={id:'m'+Date.now().toString(36),...temp,partNo:''};
+    toast('目前離線，資料先存在本機',false);
+  }
+  records.unshift(rec);
+  mirror();render();
+  const first=$('tbody').querySelector(`tr[data-id="${rec.id}"] .cell`);
+  if(first)first.focus();
+}
+
+async function removeRecord(id){
+  const r=records.find(x=>x.id===id);
+  if(!r)return;
+  if(!confirm('確定要刪除此行'+(r.code?'（'+r.code+'）':'')+'？其 PDF 也會一併刪除。'))return;
+  try{
+    if(cloudOk){
+      if(r.pdfs.length){
+        const paths=r.pdfs.map(p=>p.path).filter(Boolean);
+        if(paths.length)await sb.storage.from(BUCKET).remove(paths);
+      }
+      const {error}=await sb.from('molds').delete().eq('id',id);
+      if(error)throw error;
+      setCloud(true);
+    }
+    records=records.filter(x=>x.id!==id);
+    mirror();render();toast('已刪除');
+  }catch(e){
+    setCloud(false,e.message);
+    toast('刪除失敗：'+e.message,false);
+  }
+}
 
 function openPdfModal(id){
   currentRec=records.find(x=>x.id===id);
@@ -308,6 +416,10 @@ function openPdfModal(id){
   $('pdfModal').hidden=false;
 }
 function closePdfModal(){$('pdfModal').hidden=true;currentRec=null;}
+
+function pdfUrl(path){
+  return sb.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+}
 
 function renderPdfList(){
   const box=$('pdfList');
@@ -327,67 +439,78 @@ function renderPdfList(){
 
 async function handleFiles(ev){
   if(!currentRec)return;
+  if(!cloudOk){toast('離線模式無法上傳 PDF，請先完成雲端設定',false);ev.target.value='';return;}
   const files=[...ev.target.files];
   ev.target.value='';
   for(const f of files){
     if(f.type!=='application/pdf'&&!f.name.toLowerCase().endsWith('.pdf')){toast('略過非 PDF：'+f.name,false);continue;}
+    const pid=uid('p');
+    const path=currentRec.id+'/'+pid+'_'+f.name;
     try{
-      const pid=uid('p');
-      await dbPut(pid,f);
-      currentRec.pdfs.push({id:pid,name:f.name,size:f.size,addedAt:Date.now()});
-    }catch(e){toast('儲存失敗（瀏覽器空間不足）',false);}
+      const {error}=await sb.storage.from(BUCKET).upload(path,f,{contentType:'application/pdf'});
+      if(error)throw error;
+      currentRec.pdfs.push({id:pid,name:f.name,size:f.size,path:path,addedAt:Date.now()});
+    }catch(e){
+      toast('上傳失敗：'+(e.message||f.name),false);
+      continue;
+    }
   }
-  persist();renderPdfList();render();
-  toast('已上傳 '+files.length+' 個檔案');
+  const {error}=await sb.from('molds').update({pdfs:currentRec.pdfs}).eq('id',currentRec.id);
+  if(error)toast('檔案清單同步失敗',false);
+  mirror();renderPdfList();render();
+  toast('PDF 已上傳到雲端');
 }
 
-async function getPdfBlob(recId,pdfId){
+function findPdfMeta(recId,pdfId){
   const rec=records.find(x=>x.id===recId);
   if(!rec)return null;
   const meta=rec.pdfs.find(p=>p.id===pdfId);
-  const blob=await dbGet(pdfId);
-  if(!(blob instanceof Blob)){toast('找不到檔案資料',false);return null;}
-  return {blob,meta};
+  return meta?{rec,meta}:null;
 }
 
-async function previewPdf(recId,pdfId){
-  const got=await getPdfBlob(recId,pdfId);
-  if(!got)return;
-  if(objUrl)URL.revokeObjectURL(objUrl);
-  objUrl=URL.createObjectURL(got.blob);
-  $('viewTitle').textContent='👁 '+got.meta.name;
-  $('viewFrame').src=objUrl;
-  const dl=$('dlBtn');dl.href=objUrl;dl.download=got.meta.name;
+function previewPdf(recId,pdfId){
+  const g=findPdfMeta(recId,pdfId);
+  if(!g||!g.meta.path){toast('找不到檔案',false);return;}
+  if(objUrl){URL.revokeObjectURL(objUrl);objUrl=null;}
+  const url=pdfUrl(g.meta.path);
+  $('viewTitle').textContent='👁 '+g.meta.name;
+  $('viewFrame').src=url;
+  $('dlBtn').href=url;
+  $('dlBtn').download=g.meta.name;
   $('viewModal').hidden=false;
 }
 
 async function downloadPdf(recId,pdfId){
-  const got=await getPdfBlob(recId,pdfId);
-  if(!got)return;
-  const u=URL.createObjectURL(got.blob);
-  const a=document.createElement('a');
-  a.href=u;a.download=got.meta.name;
-  document.body.appendChild(a);a.click();a.remove();
-  setTimeout(()=>URL.revokeObjectURL(u),4000);
+  const g=findPdfMeta(recId,pdfId);
+  if(!g||!g.meta.path){toast('找不到檔案',false);return;}
+  const url=pdfUrl(g.meta.path);
+  try{
+    const res=await fetch(url);
+    const blob=await res.blob();
+    objUrl=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=objUrl;a.download=g.meta.name;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(objUrl),4000);
+  }catch(e){
+    window.open(url,'_blank');
+  }
 }
 
 async function deletePdf(recId,pdfId){
-  const rec=records.find(x=>x.id===recId);
-  const meta=rec.pdfs.find(p=>p.id===pdfId);
-  if(!confirm('刪除 PDF「'+meta.name+'」？'))return;
-  try{await dbDel(pdfId);}catch(e){}
-  rec.pdfs=rec.pdfs.filter(p=>p.id!==pdfId);
-  persist();renderPdfList();render();
-  toast('已刪除 PDF');
-}
-
-async function removeRecord(id){
-  const r=records.find(x=>x.id===id);
-  if(!r)return;
-  if(!confirm('確定要刪除此行'+(r.code?'（'+r.code+'）':'')+'？其 PDF 也會一併刪除。'))return;
-  for(const p of r.pdfs){try{await dbDel(p.id);}catch(e){}}
-  records=records.filter(x=>x.id!==id);
-  persist();render();toast('已刪除');
+  const g=findPdfMeta(recId,pdfId);
+  if(!g)return;
+  if(!confirm('刪除 PDF「'+g.meta.name+'」？'))return;
+  try{
+    if(g.meta.path)await sb.storage.from(BUCKET).remove([g.meta.path]);
+    g.rec.pdfs=g.rec.pdfs.filter(p=>p.id!==pdfId);
+    const {error}=await sb.from('molds').update({pdfs:g.rec.pdfs}).eq('id',recId);
+    if(error)throw error;
+    mirror();renderPdfList();render();
+    toast('已刪除 PDF');
+  }catch(e){
+    toast('刪除失敗：'+e.message,false);
+  }
 }
 
 function closeView(){

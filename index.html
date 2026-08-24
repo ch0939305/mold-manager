@@ -135,7 +135,7 @@ body.dark .chip-photo{color:#34d399}
     <div class="header-right">
       <span class="cloud-chip" id="cloudChip">☁️ 連線中…</span>
       <span class="stat-chip" id="statChip">共 0 筆</span>
-      <span class="stat-chip" style="opacity:.55;font-size:12px">v0824c</span>
+      <span class="stat-chip" style="opacity:.55;font-size:12px">v0824d</span>
       <button class="theme-btn" id="themeBtn" title="切換日間／夜間模式"><span id="themeIcon">🌙</span><span id="themeText">夜間模式</span></button>
     </div>
   </header>
@@ -143,6 +143,11 @@ body.dark .chip-photo{color:#34d399}
   <div class="banner" id="dbBanner" hidden>
     <span>⚠️</span>
     <span>尚未連上雲端資料庫——請先到 Supabase Dashboard 的「SQL Editor」貼上執行桌面上的《Supabase雲端設定.sql》，完成後重新整理此頁。</span>
+  </div>
+
+  <div class="banner" id="roBanner" hidden style="background:rgba(0,113,227,.1);border-color:rgba(0,113,227,.4);color:#0369a1">
+    <span>👁️</span>
+    <span>唯讀模式——此頁由 QR 掃描開啟，僅可查看資料、照片與 PDF，無法編輯。要新增或修改，請從書籤開啟系統首頁（網址不含 ?m=）。</span>
   </div>
 
   <div class="card">
@@ -184,7 +189,7 @@ body.dark .chip-photo{color:#34d399}
       <button class="icon-btn" id="pdfClose">✕</button>
     </div>
     <div style="padding:18px 22px;overflow-y:auto">
-      <label class="upload-btn">⬆️ 上傳 PDF（可多選）<input type="file" id="pdfInput" accept="application/pdf,.pdf" multiple hidden></label>
+      <label class="upload-btn" id="pdfUploadLabel">⬆️ 上傳 PDF（可多選）<input type="file" id="pdfInput" accept="application/pdf,.pdf" multiple hidden></label>
       <div id="pdfList"></div>
     </div>
   </div>
@@ -211,7 +216,7 @@ body.dark .chip-photo{color:#34d399}
       <button class="icon-btn" id="photoClose">✕</button>
     </div>
     <div style="padding:18px 22px;overflow-y:auto">
-      <label class="upload-btn">📷 上傳照片（可多選，自動壓縮）<input type="file" id="photoInput" accept="image/*" multiple hidden></label>
+      <label class="upload-btn" id="photoUploadLabel">📷 上傳照片（可多選，自動壓縮）<input type="file" id="photoInput" accept="image/*" multiple hidden></label>
       <div id="photoList"></div>
     </div>
   </div>
@@ -249,7 +254,7 @@ const BUCKET='mold-pdfs';
 let sb=null;
 try{sb=supabase.createClient(SB_URL,SB_KEY);}catch(e){}
 
-let records=[],currentRec=null,cloudOk=false,objUrl=null;
+let records=[],currentRec=null,cloudOk=false,objUrl=null,readOnly=false;
 const $=id=>document.getElementById(id);
 
 let dbPromise=null;
@@ -371,10 +376,10 @@ function render(){
   $('statChip').textContent='共 '+records.length+' 筆';
   $('emptyMsg').style.display=list.length?'none':'';
   $('tbody').innerHTML=list.map(r=>{
-    const cells=TEXT_COLS.map(([k,ph])=>`<td><div class="cell ${k==='date'?'date':''} ${k==='code'?'code':''} ${k==='note'?'note':''}" contenteditable="true" data-k="${k}" data-ph="${ph}">${esc(r[k])}</div></td>`);
-    const typeCell=`<td><select class="type-sel" data-k="type"><option value=""${r.type?'':' selected'}>─ 選擇 ─</option>${TYPES.map(t=>`<option value="${t}"${r.type===t?' selected':''}>${t}</option>`).join('')}</select></td>`;
+    const cells=TEXT_COLS.map(([k,ph])=>`<td><div class="cell ${k==='date'?'date':''} ${k==='code'?'code':''} ${k==='note'?'note':''}" contenteditable="${readOnly?'false':'true'}" data-k="${k}" data-ph="${readOnly?'':ph}">${esc(r[k])}</div></td>`);
+    const typeCell=`<td><select class="type-sel" data-k="type"${readOnly?' disabled':''}><option value=""${r.type?'':' selected'}>─ 選擇 ─</option>${TYPES.map(t=>`<option value="${t}"${r.type===t?' selected':''}>${t}</option>`).join('')}</select></td>`;
     const rowCells=cells[0]+cells[1]+typeCell+cells.slice(2).join('');
-    return `<tr data-id="${r.id}">${rowCells}<td><button class="chip chip-photo" onclick="openPhotoModal('${r.id}')">📷 ${(r.photos||[]).length}</button></td><td><button class="chip chip-pdf" onclick="openPdfModal('${r.id}')">📄 ${r.pdfs.length}</button></td><td><button class="act-btn act-qr" title="QR 標籤" onclick="openQrModal('${r.id}')">🏷️</button><button class="act-btn act-del" title="刪除此行" onclick="removeRecord('${r.id}')">🗑️</button></td></tr>`;
+    return `<tr data-id="${r.id}">${rowCells}<td><button class="chip chip-photo" onclick="openPhotoModal('${r.id}')">📷 ${(r.photos||[]).length}</button></td><td><button class="chip chip-pdf" onclick="openPdfModal('${r.id}')">📄 ${r.pdfs.length}</button></td><td><button class="act-btn act-qr" title="QR 標籤" onclick="openQrModal('${r.id}')">🏷️</button>${readOnly?'':`<button class="act-btn act-del" title="刪除此行" onclick="removeRecord('${r.id}')">🗑️</button>`}</td></tr>`;
   }).join('');
 }
 
@@ -410,6 +415,11 @@ document.addEventListener('DOMContentLoaded',()=>{
     $('themeText').textContent=theme==='dark'?'日間模式':'夜間模式';
   };
   applyTheme();
+  readOnly=!!new URLSearchParams(location.search).get('m');
+  $('addBtn').hidden=readOnly;
+  $('roBanner').hidden=!readOnly;
+  $('pdfUploadLabel').hidden=readOnly;
+  $('photoUploadLabel').hidden=readOnly;
   $('themeBtn').onclick=()=>{theme=theme==='light'?'dark':'light';localStorage.setItem('moldTheme',theme);applyTheme();};
 
   $('addBtn').onclick=addRow;
@@ -545,7 +555,7 @@ function renderPdfList(){
       </div>
       <button class="mini-btn mini-view" onclick="previewPdf('${currentRec.id}','${p.id}')">👁 預覽</button>
       <button class="mini-btn mini-dl" onclick="downloadPdf('${currentRec.id}','${p.id}')">⬇ 下載</button>
-      <button class="mini-btn mini-del" onclick="deletePdf('${currentRec.id}','${p.id}')">🗑</button>
+      ${readOnly?'':`<button class="mini-btn mini-del" onclick="deletePdf('${currentRec.id}','${p.id}')">🗑</button>`}
     </div>`).join('');
 }
 
@@ -656,7 +666,7 @@ function renderPhotoList(){
       </div>
       <button class="mini-btn mini-view" onclick="previewPhoto('${currentRec.id}','${p.id}')">👁 預覽</button>
       <button class="mini-btn mini-dl" onclick="downloadPhoto('${currentRec.id}','${p.id}')">⬇ 下載</button>
-      <button class="mini-btn mini-del" onclick="deletePhoto('${currentRec.id}','${p.id}')">🗑</button>
+      ${readOnly?'':`<button class="mini-btn mini-del" onclick="deletePhoto('${currentRec.id}','${p.id}')">🗑</button>`}
     </div>`).join('');
 }
 

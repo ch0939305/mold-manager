@@ -247,11 +247,26 @@ const $=id=>document.getElementById(id);
 let dbPromise=null;
 function loadScript(src){
   return new Promise((res,rej)=>{
-    if(window.document.querySelector('script[src="'+src+'"]')){res();return;}
+    const old=document.head.querySelector('script[data-lazy="'+src+'"]');
+    if(old)old.remove();
     const s=document.createElement('script');
-    s.src=src;s.onload=res;s.onerror=()=>rej(new Error('外部程式載入失敗'));
+    s.src=src;s.dataset.lazy=src;s.onload=()=>res();s.onerror=()=>{s.remove();rej(new Error('外部程式載入失敗'));};
     document.head.appendChild(s);
   });
+}
+const QRLIB_URLS=[
+  'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js',
+  'https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js',
+  'https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js'
+];
+async function ensureQrLib(){
+  if(window.QRCode&&typeof window.QRCode.toDataURL==='function')return;
+  let lastErr=null;
+  for(const u of QRLIB_URLS){
+    try{await loadScript(u);}catch(e){lastErr=e;continue;}
+    if(window.QRCode&&typeof window.QRCode.toDataURL==='function')return;
+  }
+  throw new Error(lastErr?('QR 元件載入失敗，請確認網路後重試（'+lastErr.message+'）'):'QR 元件載入失敗，請稍後重試');
 }
 function dbOpen(){
   if(dbPromise)return dbPromise;
@@ -454,6 +469,7 @@ document.addEventListener('DOMContentLoaded',()=>{
   $('qrModal').addEventListener('click',e=>{if(e.target===$('qrModal'))closeQrModal();});
 
   loadAll().then(highlightFromUrl);
+  ensureQrLib().catch(()=>{});
 });
 
 async function addRow(){
@@ -746,7 +762,7 @@ async function openQrModal(id){
   $('qrSub').textContent=[qrRec.product,qrRec.location].filter(Boolean).join('　')||qrRec.date||'';
   const url=location.origin+location.pathname+'?m='+qrRec.id;
   try{
-    await loadScript('https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js');
+    await ensureQrLib();
     const dataUrl=await QRCode.toDataURL(url,{width:300,margin:1,errorCorrectionLevel:'M'});
     $('qrImg').innerHTML='<img src="'+dataUrl+'" alt="QR code">';
     const host=$('printHost');

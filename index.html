@@ -332,22 +332,19 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   $('backupBtn').onclick=()=>{
     if(!records.length){toast('目前沒有資料可備份',false);return;}
-    const payload={
-      app:'mold-manager',
-      version:1,
-      exportedAt:new Date().toISOString(),
-      count:records.length,
-      records:records
-    };
     try{
-      const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+      const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+      const head=['日期','模具編號','模具類別','模具位置','模具呎吋','產品名稱','產品編號','備註','PDF數量'];
+      const lines=[head.join(',')].concat(records.map(r=>[r.date,r.code,r.type,r.location,r.size,r.product,r.partNo,r.note,r.pdfs.length].map(q).join(',')));
+      const csv='\uFEFF'+lines.join('\r\n');
+      const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
       const url=URL.createObjectURL(blob);
       const a=document.createElement('a');
       a.href=url;
-      a.download='模具備份_'+today().replace(/-/g,'')+'.json';
+      a.download='模具備份_'+today().replace(/-/g,'')+'.csv';
       document.body.appendChild(a);a.click();a.remove();
       setTimeout(()=>URL.revokeObjectURL(url),4000);
-      toast('已備份 '+records.length+' 筆資料到電腦');
+      toast('已備份 '+records.length+' 筆到電腦（可用 Excel 開啟）');
     }catch(e){
       toast('備份失敗：'+e.message,false);
     }

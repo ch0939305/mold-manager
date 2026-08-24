@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🏭 模具管理系統</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+:root{
+  --bg:#f1f3f9;
+  --bg-grad:radial-gradient(1100px 700px at 88% -12%,#dbeafe 0%,transparent 58%),radial-gradient(950px 650px at -12% 28%,#e0e7ff 0%,transparent 55%),radial-gradient(900px 620px at 55% 115%,#ffe4e6 0%,transparent 55%),linear-gradient(165deg,#f6f7fc,#edf0f8);
+  --card:rgba(255,255,255,.85);--text:#1d1d1f;--text2:#55555e;--text3:#98989f;
+  --border:#e3e3ee;--border2:#ededf4;--accent:#0071e3;
+  --accent-light:#e8f0fe;--shadow:0 10px 30px rgba(96,102,177,.13);
+  --in-grad:linear-gradient(90deg,#0071e3,#06b6d4);
+  --pv-grad:linear-gradient(90deg,#7c3aed,#ec4899);
+  --danger:#ef4444;--danger-grad:linear-gradient(135deg,#ef4444,#f97316);
+}
+body.dark{
+  --bg:#131318;
+  --bg-grad:radial-gradient(1100px 700px at 88% -12%,#1d2c52 0%,transparent 58%),radial-gradient(950px 650px at -12% 28%,#291d4d 0%,transparent 55%),radial-gradient(900px 620px at 55% 115%,#421f36 0%,transparent 55%),linear-gradient(165deg,#15151c,#101016);
+  --card:rgba(41,41,49,.88);--text:#f5f5f7;--text2:#c0c0c8;--text3:#7a7a82;
+  --border:#3e3e48;--border2:#4a4a54;--accent:#0a84ff;
+  --accent-light:#17304e;--shadow:0 12px 34px rgba(0,0,0,.5);
+  --in-grad:linear-gradient(90deg,#0a84ff,#22d3ee);
+  --pv-grad:linear-gradient(90deg,#8b5cf6,#f472b6);
+  --danger:#f87171;--danger-grad:linear-gradient(135deg,#dc2626,#ea580c);
+}
+body{font-family:'Microsoft JhengHei','微軟正黑體','PingFang TC','Heiti TC','Noto Sans TC','DFHei',sans-serif;background:var(--bg-grad);background-attachment:fixed;background-color:var(--bg);color:var(--text);min-height:100vh;transition:background-color .35s,color .35s;line-height:1.6;padding:32px 18px;display:flex;justify-content:center}
+.container{max-width:1180px;width:100%}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:14px}
+.header h1{font-size:26px;font-weight:800;background:linear-gradient(90deg,#0a84ff,#8b5cf6 50%,#ec4899);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.header-right{display:flex;align-items:center;gap:12px}
+.stat-chip{padding:7px 16px;border-radius:999px;background:var(--accent-light);color:var(--accent);font-weight:700;font-size:14px}
+.theme-btn{height:42px;padding:0 20px;border-radius:14px;border:none;background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .25s;box-shadow:0 6px 16px rgba(245,158,11,.4);display:inline-flex;align-items:center;gap:9px}
+.theme-btn:hover{transform:translateY(-2px) scale(1.04);filter:brightness(1.08)}
+body.dark .theme-btn{background:linear-gradient(135deg,#0a84ff,#8b5cf6);box-shadow:0 6px 16px rgba(99,102,241,.4)}
+.card{position:relative;overflow:hidden;background:var(--card);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-radius:20px;padding:26px 28px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;z-index:1;background:var(--pv-grad)}
+.toolbar{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.btn{border:none;cursor:pointer;font-family:inherit;font-size:15px;font-weight:700;padding:11px 22px;border-radius:12px;transition:all .2s;display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:inherit}
+.btn-add{background:var(--in-grad);color:#fff;box-shadow:0 6px 16px rgba(0,113,227,.28)}
+.btn-add:hover{transform:translateY(-2px);filter:brightness(1.08)}
+.search-input{flex:1;min-width:220px;padding:11px 18px;border:1.5px solid var(--border2);border-radius:12px;background:transparent;color:var(--text);font-size:15px;outline:none;transition:border-color .2s;font-family:inherit}
+.search-input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(124,58,237,.12)}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:1280px}
+th{text-align:left;font-size:13px;font-weight:700;color:var(--text3);letter-spacing:.5px;padding:10px 12px;border-bottom:2px solid var(--border2);white-space:nowrap}
+th .th-ico{margin-right:4px}
+td{padding:6px 8px;border-bottom:1px solid var(--border2);vertical-align:middle}
+tbody tr{transition:background .15s}
+tbody tr:hover{background:rgba(124,58,237,.05)}
+.cell{padding:9px 10px;border-radius:9px;border:1.5px dashed transparent;outline:none;font-size:14.5px;min-width:70px;transition:border-color .15s,background .15s;cursor:text}
+.cell:hover{border-color:var(--border)}
+.cell:focus{border-style:solid;border-color:var(--accent);background:rgba(10,132,255,.06);box-shadow:0 0 0 3px rgba(10,132,255,.1)}
+.cell:empty::before{content:attr(data-ph);color:var(--text3);pointer-events:none}
+.cell.date{font-weight:600;color:var(--accent);min-width:96px}
+.cell.code{font-weight:800;color:var(--pv-accent,#7c3aed)}
+body.dark .cell.code{color:#b79cff}
+.cell.note{min-width:150px}
+.type-sel{padding:9px 12px;border-radius:9px;border:1.5px solid var(--border);background:transparent;color:var(--text);font-size:14px;font-weight:600;font-family:inherit;cursor:pointer;outline:none;transition:border-color .15s}
+.type-sel:hover{border-color:var(--accent)}
+.type-sel:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(10,132,255,.1)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border-radius:999px;font-size:13px;font-weight:700;cursor:pointer;border:1.5px solid transparent;transition:all .2s;font-family:inherit;white-space:nowrap}
+.chip-pdf{background:rgba(245,158,11,.12);color:#d97706;border-color:rgba(245,158,11,.35)}
+.chip-pdf:hover{background:rgba(245,158,11,.22)}
+body.dark .chip-pdf{color:#fbbf24}
+.act-btn{width:34px;height:34px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;font-size:15px;cursor:pointer;transition:all .2s}
+.act-del:hover{border-color:var(--danger);box-shadow:0 4px 12px rgba(239,68,68,.3);transform:translateY(-2px)}
+.empty{text-align:center;padding:46px 0;color:var(--text3);font-size:15px}
+.modal-backdrop{position:fixed;inset:0;background:rgba(20,20,30,.55);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:50;padding:18px}
+.modal{background:var(--card);backdrop-filter:blur(20px);border:1px solid var(--border);border-radius:20px;box-shadow:0 24px 60px rgba(0,0,0,.35);overflow:hidden;display:flex;flex-direction:column;animation:pop .22s ease}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+.pdf-modal{width:min(520px,96vw);max-height:86vh}
+.view-modal{width:min(940px,96vw);height:90vh}
+.modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--border2)}
+.modal-head h2{font-size:17px;font-weight:800}
+.modal-head .tools{display:flex;gap:10px;align-items:center}
+.icon-btn{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;color:var(--text);font-size:15px;cursor:pointer;transition:all .2s}
+.icon-btn:hover{border-color:var(--danger);color:var(--danger)}
+.upload-btn{display:inline-block;padding:11px 20px;border-radius:12px;background:var(--pv-grad);color:#fff;font-weight:700;font-size:14px;cursor:pointer;margin-bottom:16px;transition:all .2s;user-select:none}
+.upload-btn:hover{filter:brightness(1.08);transform:translateY(-2px)}
+.pdf-item{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1px solid var(--border2);border-radius:12px;margin-bottom:10px}
+.pdf-item .pinfo{flex:1;min-width:0}
+.pdf-item .pname{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pdf-item .psize{font-size:12.5px;color:var(--text3)}
+.mini-btn{padding:8px 14px;border-radius:9px;border:none;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap}
+.mini-view{background:var(--accent-light);color:var(--accent)}
+.mini-dl{background:rgba(6,182,212,.14);color:#0891b2}
+.mini-del{background:rgba(239,68,68,.12);color:var(--danger)}
+.mini-btn:hover{filter:brightness(.95);transform:translateY(-1px)}
+.view-modal iframe{flex:1;width:100%;border:none;background:#525659}
+.toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%);padding:13px 26px;border-radius:999px;color:#fff;font-weight:700;font-size:14.5px;z-index:99;box-shadow:0 10px 30px rgba(0,0,0,.3);animation:pop .25s ease}
+.toast.ok{background:linear-gradient(135deg,#059669,#10b981)}
+.toast.err{background:var(--danger-grad)}
+@media(max-width:560px){body{padding:20px 12px}.card{padding:20px 16px}.header h1{font-size:22px}.view-modal{height:82vh}}
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="header">
+    <h1>🏭 模具管理系統</h1>
+    <div class="header-right">
+      <span class="stat-chip" id="statChip">共 0 筆</span>
+      <button class="theme-btn" id="themeBtn" title="切換日間／夜間模式"><span id="themeIcon">🌙</span><span id="themeText">夜間模式</span></button>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="toolbar">
+      <button class="btn btn-add" id="addBtn">＋ 新增一行</button>
+      <input id="search" class="search-input" placeholder="🔍 搜尋日期／編號／位置／產品…（點格子直接修改，自動保存）">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th><span class="th-ico">📅</span>日期</th>
+            <th><span class="th-ico">🔧</span>模具編號</th>
+            <th><span class="th-ico">🏷️</span>模具類別</th>
+            <th><span class="th-ico">📍</span>模具位置</th>
+            <th><span class="th-ico">📐</span>模具呎吋</th>
+            <th><span class="th-ico">📦</span>產品名稱</th>
+            <th><span class="th-ico">#️⃣</span>產品編號</th>
+            <th><span class="th-ico">📝</span>備註</th>
+            <th><span class="th-ico">📄</span>PDF 圖面</th>
+            <th><span class="th-ico">⚙️</span>操作</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="empty" id="emptyMsg">📭 目前沒有資料——點上方「＋ 新增一行」開始填寫，格子裡直接打字即可自動記錄</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="pdfModal" hidden>
+  <div class="modal pdf-modal">
+    <div class="modal-head">
+      <h2 id="pdfModalTitle">PDF 管理</h2>
+      <button class="icon-btn" id="pdfClose">✕</button>
+    </div>
+    <div style="padding:18px 22px;overflow-y:auto">
+      <label class="upload-btn">⬆️ 上傳 PDF（可多選）<input type="file" id="pdfInput" accept="application/pdf,.pdf" multiple hidden></label>
+      <div id="pdfList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="viewModal" hidden>
+  <div class="modal view-modal">
+    <div class="modal-head">
+      <h2 id="viewTitle">預覽</h2>
+      <div class="tools">
+        <a class="btn btn-add" id="dlBtn" download>⬇️ 下載</a>
+        <button class="icon-btn" id="viewClose">✕</button>
+      </div>
+    </div>
+    <iframe id="viewFrame" title="PDF 預覽"></iframe>
+  </div>
+</div>
+
+<div class="toast ok" id="toast" hidden></div>
+
+<script>
+const LS_KEY='moldManagerRecords';
+let records=[],currentRec=null,objUrl=null;
+const $=id=>document.getElementById(id);
+
+let dbPromise=null;
+function dbOpen(){
+  if(dbPromise)return dbPromise;
+  dbPromise=new Promise((res,rej)=>{
+    const r=indexedDB.open('moldManagerDB',1);
+    r.onupgradeneeded=e=>{e.target.result.createObjectStore('pdfs');};
+    r.onsuccess=e=>res(e.target.result);
+    r.onerror=()=>rej(r.error);
+  });
+  return dbPromise;
+}
+async function dbPut(k,v){const d=await dbOpen();return new Promise((res,rej)=>{const tx=d.transaction('pdfs','readwrite');tx.objectStore('pdfs').put(v,k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});}
+async function dbGet(k){const d=await dbOpen();return new Promise((res,rej)=>{const rq=d.transaction('pdfs','readonly').objectStore('pdfs').get(k);rq.onsuccess=()=>res(rq.result);rq.onerror=()=>rej(rq.error);});}
+async function dbDel(k){const d=await dbOpen();return new Promise((res,rej)=>{const tx=d.transaction('pdfs','readwrite');tx.objectStore('pdfs').delete(k);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});}
+
+function load(){
+  try{records=JSON.parse(localStorage.getItem(LS_KEY))||[];}catch(e){records=[];}
+  if(!records.length&&!localStorage.getItem('moldMigrated')){
+    try{
+      const old=JSON.parse(localStorage.getItem('moldAppData')||'[]');
+      if(Array.isArray(old)&&old.length){
+        records=old.map(p=>({id:uid('m'),date:String(p.date||''),code:String(p.moldId||''),type:String(p.moldType||p.moldClass||''),location:String(p.position||''),size:String(p.size||''),product:String(p.productName||''),partNo:String(p.partNo||p.productNo||''),note:'',pdfs:[]}));
+        persist();
+        setTimeout(()=>toast('已從「模具管理2版」自動匯入 '+records.length+' 筆舊資料'),800);
+      }
+    }catch(e){}
+    localStorage.setItem('moldMigrated','1');
+  }
+}
+function persist(){localStorage.setItem(LS_KEY,JSON.stringify(records));}
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=p=>p+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const fmtSize=n=>n>=1048576?(n/1048576).toFixed(1)+' MB':(n/1024).toFixed(0)+' KB';
+const today=()=>new Date().toLocaleDateString('sv-SE');
+
+let toastTimer=null;
+function toast(msg,ok=true){
+  const t=$('toast');
+  t.textContent=msg;t.className='toast '+(ok?'ok':'err');t.hidden=false;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.hidden=true,2400);
+}
+
+function filtered(){
+  const q=$('search').value.trim().toLowerCase();
+  if(!q)return records;
+  return records.filter(r=>[r.date,r.code,r.type,r.location,r.size,r.product,r.partNo,r.note].some(v=>String(v||'').toLowerCase().includes(q)));
+}
+
+const TYPES=['R模','直孔模','束模','朔型模','活動模'];
+const TEXT_COLS=[['date','2026/08/24'],['code','M-001'],['location','A區-01'],['size','300×250×50'],['product','產品名稱'],['partNo','P-1001'],['note','備註…']];
+
+function render(){
+  const list=filtered();
+  $('statChip').textContent='共 '+records.length+' 筆';
+  $('emptyMsg').style.display=list.length?'none':'';
+  $('tbody').innerHTML=list.map(r=>{
+    const cells=TEXT_COLS.map(([k,ph])=>`<td><div class="cell ${k==='date'?'date':''} ${k==='code'?'code':''} ${k==='note'?'note':''}" contenteditable="true" data-k="${k}" data-ph="${ph}">${esc(r[k])}</div></td>`);
+    const typeCell=`<td><select class="type-sel" data-k="type"><option value=""${r.type?'':' selected'}>─ 選擇 ─</option>${TYPES.map(t=>`<option value="${t}"${r.type===t?' selected':''}>${t}</option>`).join('')}</select></td>`;
+    const rowCells=cells[0]+cells[1]+typeCell+cells.slice(2).join('');
+    return `<tr data-id="${r.id}">${rowCells}<td><button class="chip chip-pdf" onclick="openPdfModal('${r.id}')">📄 ${r.pdfs.length}</button></td><td><button class="act-btn act-del" title="刪除此行" onclick="removeRecord('${r.id}')">🗑️</button></td></tr>`;
+  }).join('');
+}
+
+let saveTimer=null;
+function queueSave(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{persist();},400);
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  let theme=localStorage.getItem('moldTheme')||'light';
+  const applyTheme=()=>{
+    document.body.classList.toggle('dark',theme==='dark');
+    $('themeIcon').textContent=theme==='dark'?'☀️':'🌙';
+    $('themeText').textContent=theme==='dark'?'日間模式':'夜間模式';
+  };
+  applyTheme();
+  $('themeBtn').onclick=()=>{theme=theme==='light'?'dark':'light';localStorage.setItem('moldTheme',theme);applyTheme();};
+
+  $('addBtn').onclick=()=>{
+    const rec={id:uid('m'),date:today(),code:'',location:'',size:'',product:'',partNo:'',pdfs:[]};
+    records.unshift(rec);
+    persist();render();
+    const firstCell=$('tbody').querySelector(`tr[data-id="${rec.id}"] .cell`);
+    if(firstCell)firstCell.focus();
+    toast('已新增一行，直接在格子上填寫');
+  };
+
+  $('tbody').addEventListener('input',e=>{
+    const cell=e.target.closest('.cell');
+    if(!cell)return;
+    const tr=cell.closest('tr');
+    const rec=records.find(r=>r.id===tr.dataset.id);
+    if(!rec)return;
+    rec[cell.dataset.k]=cell.textContent.trim();
+    queueSave();
+  });
+
+  $('tbody').addEventListener('change',e=>{
+    const sel=e.target.closest('.type-sel');
+    if(!sel)return;
+    const tr=sel.closest('tr');
+    const rec=records.find(r=>r.id===tr.dataset.id);
+    if(!rec)return;
+    rec.type=sel.value;
+    queueSave();
+  });
+
+  $('tbody').addEventListener('keydown',e=>{
+    const cell=e.target.closest('.cell');
+    if(cell&&e.key==='Enter'){e.preventDefault();cell.blur();}
+  });
+
+  $('tbody').addEventListener('paste',e=>{
+    const cell=e.target.closest('.cell');
+    if(!cell)return;
+    e.preventDefault();
+    const txt=(e.clipboardData||window.clipboardData).getData('text/plain');
+    document.execCommand('insertText',false,txt.replace(/\s+/g,' ').trim());
+  });
+
+  $('search').addEventListener('input',render);
+
+  $('pdfInput').addEventListener('change',handleFiles);
+  $('pdfClose').onclick=closePdfModal;
+  $('viewClose').onclick=closeView;
+  $('pdfModal').addEventListener('click',e=>{if(e.target===$('pdfModal'))closePdfModal();});
+  $('viewModal').addEventListener('click',e=>{if(e.target===$('viewModal'))closeView();});
+
+  load();render();
+});
+
+function openPdfModal(id){
+  currentRec=records.find(x=>x.id===id);
+  if(!currentRec)return;
+  $('pdfModalTitle').textContent='📄 PDF 管理 — '+(currentRec.code||'未命名模具');
+  renderPdfList();
+  $('pdfModal').hidden=false;
+}
+function closePdfModal(){$('pdfModal').hidden=true;currentRec=null;}
+
+function renderPdfList(){
+  const box=$('pdfList');
+  if(!currentRec.pdfs.length){box.innerHTML='<div class="empty">尚未上傳任何 PDF</div>';return;}
+  box.innerHTML=currentRec.pdfs.map(p=>`
+    <div class="pdf-item">
+      <span style="font-size:22px">📑</span>
+      <div class="pinfo">
+        <div class="pname">${esc(p.name)}</div>
+        <div class="psize">${fmtSize(p.size)}　${new Date(p.addedAt).toLocaleString('zh-TW')}</div>
+      </div>
+      <button class="mini-btn mini-view" onclick="previewPdf('${currentRec.id}','${p.id}')">👁 預覽</button>
+      <button class="mini-btn mini-dl" onclick="downloadPdf('${currentRec.id}','${p.id}')">⬇ 下載</button>
+      <button class="mini-btn mini-del" onclick="deletePdf('${currentRec.id}','${p.id}')">🗑</button>
+    </div>`).join('');
+}
+
+async function handleFiles(ev){
+  if(!currentRec)return;
+  const files=[...ev.target.files];
+  ev.target.value='';
+  for(const f of files){
+    if(f.type!=='application/pdf'&&!f.name.toLowerCase().endsWith('.pdf')){toast('略過非 PDF：'+f.name,false);continue;}
+    try{
+      const pid=uid('p');
+      await dbPut(pid,f);
+      currentRec.pdfs.push({id:pid,name:f.name,size:f.size,addedAt:Date.now()});
+    }catch(e){toast('儲存失敗（瀏覽器空間不足）',false);}
+  }
+  persist();renderPdfList();render();
+  toast('已上傳 '+files.length+' 個檔案');
+}
+
+async function getPdfBlob(recId,pdfId){
+  const rec=records.find(x=>x.id===recId);
+  if(!rec)return null;
+  const meta=rec.pdfs.find(p=>p.id===pdfId);
+  const blob=await dbGet(pdfId);
+  if(!(blob instanceof Blob)){toast('找不到檔案資料',false);return null;}
+  return {blob,meta};
+}
+
+async function previewPdf(recId,pdfId){
+  const got=await getPdfBlob(recId,pdfId);
+  if(!got)return;
+  if(objUrl)URL.revokeObjectURL(objUrl);
+  objUrl=URL.createObjectURL(got.blob);
+  $('viewTitle').textContent='👁 '+got.meta.name;
+  $('viewFrame').src=objUrl;
+  const dl=$('dlBtn');dl.href=objUrl;dl.download=got.meta.name;
+  $('viewModal').hidden=false;
+}
+
+async function downloadPdf(recId,pdfId){
+  const got=await getPdfBlob(recId,pdfId);
+  if(!got)return;
+  const u=URL.createObjectURL(got.blob);
+  const a=document.createElement('a');
+  a.href=u;a.download=got.meta.name;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(u),4000);
+}
+
+async function deletePdf(recId,pdfId){
+  const rec=records.find(x=>x.id===recId);
+  const meta=rec.pdfs.find(p=>p.id===pdfId);
+  if(!confirm('刪除 PDF「'+meta.name+'」？'))return;
+  try{await dbDel(pdfId);}catch(e){}
+  rec.pdfs=rec.pdfs.filter(p=>p.id!==pdfId);
+  persist();renderPdfList();render();
+  toast('已刪除 PDF');
+}
+
+async function removeRecord(id){
+  const r=records.find(x=>x.id===id);
+  if(!r)return;
+  if(!confirm('確定要刪除此行'+(r.code?'（'+r.code+'）':'')+'？其 PDF 也會一併刪除。'))return;
+  for(const p of r.pdfs){try{await dbDel(p.id);}catch(e){}}
+  records=records.filter(x=>x.id!==id);
+  persist();render();toast('已刪除');
+}
+
+function closeView(){
+  $('viewModal').hidden=true;
+  $('viewFrame').src='';
+  if(objUrl){URL.revokeObjectURL(objUrl);objUrl=null;}
+}
+</script>
+</body>
+</html>

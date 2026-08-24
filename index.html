@@ -53,7 +53,7 @@ body.dark .banner{color:#fbbf24}
 .search-input{flex:1;min-width:220px;padding:11px 18px;border:1.5px solid var(--border2);border-radius:12px;background:transparent;color:var(--text);font-size:15px;outline:none;transition:border-color .2s;font-family:inherit}
 .search-input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(124,58,237,.12)}
 .table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:1320px}
+table{width:100%;border-collapse:collapse;min-width:1520px}
 th{text-align:left;font-size:13px;font-weight:700;color:var(--text3);letter-spacing:.5px;padding:10px 12px;border-bottom:2px solid var(--border2);white-space:nowrap}
 th .th-ico{margin-right:4px}
 td{padding:6px 8px;border-bottom:1px solid var(--border2);vertical-align:middle}
@@ -138,6 +138,8 @@ body.dark .chip-pdf{color:#fbbf24}
             <th><span class="th-ico">📐</span>模具呎吋</th>
             <th><span class="th-ico">📦</span>產品名稱</th>
             <th><span class="th-ico">#️⃣</span>產品編號</th>
+            <th><span class="th-ico">⚖️</span>重量g</th>
+            <th><span class="th-ico">📏</span>夾箱距離</th>
             <th><span class="th-ico">📝</span>備註</th>
             <th><span class="th-ico">📄</span>PDF 圖面</th>
             <th><span class="th-ico">⚙️</span>操作</th>
@@ -207,7 +209,7 @@ function mirror(){try{localStorage.setItem(LS_CACHE,JSON.stringify(records));}ca
 function loadCache(){try{return JSON.parse(localStorage.getItem(LS_CACHE))||[];}catch(e){return[];}}
 
 function dbRowToLocal(r){
-  return {id:r.id,date:r.date||'',code:r.code||'',type:r.type||'',location:r.location||'',size:r.size||'',product:r.product||'',partNo:r.part_no||'',note:r.note||'',pdfs:Array.isArray(r.pdfs)?r.pdfs:[]};
+  return {id:r.id,date:r.date||'',code:r.code||'',type:r.type||'',location:r.location||'',size:r.size||'',product:r.product||'',partNo:r.part_no||'',weight:r.weight||'',clamp:r.clamp_distance||'',note:r.note||'',pdfs:Array.isArray(r.pdfs)?r.pdfs:[]};
 }
 
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -276,11 +278,11 @@ async function migrateIfNeeded(){
 function filtered(){
   const q=$('search').value.trim().toLowerCase();
   if(!q)return records;
-  return records.filter(r=>[r.date,r.code,r.type,r.location,r.size,r.product,r.partNo,r.note].some(v=>String(v||'').toLowerCase().includes(q)));
+  return records.filter(r=>[r.date,r.code,r.type,r.location,r.size,r.product,r.partNo,r.weight,r.clamp,r.note].some(v=>String(v||'').toLowerCase().includes(q)));
 }
 
 const TYPES=['R模','直孔模','束模','朔型模','活動模'];
-const TEXT_COLS=[['date','2026/08/24'],['code','M-001'],['location','A區-01'],['size','300×250×50'],['product','產品名稱'],['partNo','P-1001'],['note','備註…']];
+const TEXT_COLS=[['date','2026/08/24'],['code','M-001'],['location','A區-01'],['size','300×250×50'],['product','產品名稱'],['partNo','P-1001'],['weight','重量…'],['clamp','距離…'],['note','備註…']];
 
 function render(){
   const list=filtered();
@@ -334,8 +336,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(!records.length){toast('目前沒有資料可備份',false);return;}
     try{
       const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
-      const head=['日期','模具編號','模具類別','模具位置','模具呎吋','產品名稱','產品編號','備註','PDF數量'];
-      const lines=[head.join(',')].concat(records.map(r=>[r.date,r.code,r.type,r.location,r.size,r.product,r.partNo,r.note,r.pdfs.length].map(q).join(',')));
+      const head=['日期','模具編號','模具類別','模具位置','模具呎吋','產品名稱','產品編號','重量g','夾箱距離','備註','PDF數量'];
+      const lines=[head.join(',')].concat(records.map(r=>[r.date,r.code,r.type,r.location,r.size,r.product,r.partNo,r.weight,r.clamp,r.note,r.pdfs.length].map(q).join(',')));
       const csv='\uFEFF'+lines.join('\r\n');
       const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
       const url=URL.createObjectURL(blob);
@@ -393,14 +395,14 @@ document.addEventListener('DOMContentLoaded',()=>{
 });
 
 async function addRow(){
-  const temp={date:today(),code:'',type:'',location:'',size:'',product:'',part_no:'',note:'',pdfs:[]};
+  const temp={date:today(),code:'',type:'',location:'',size:'',product:'',part_no:'',weight:'',clamp_distance:'',note:'',pdfs:[]};
   let rec;
   if(cloudOk){
     const {data,error}=await sb.from('molds').insert(temp).select().single();
     if(error){setCloud(false,error.message);toast('新增失敗：'+error.message,false);return;}
     rec=dbRowToLocal(data);
   }else{
-    rec={id:'m'+Date.now().toString(36),...temp,partNo:''};
+    rec={id:'m'+Date.now().toString(36),...temp,partNo:'',weight:'',clamp:''};
     toast('目前離線，資料先存在本機',false);
   }
   records.unshift(rec);

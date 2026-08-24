@@ -53,7 +53,7 @@ body.dark .banner{color:#fbbf24}
 .search-input{flex:1;min-width:220px;padding:11px 18px;border:1.5px solid var(--border2);border-radius:12px;background:transparent;color:var(--text);font-size:15px;outline:none;transition:border-color .2s;font-family:inherit}
 .search-input:focus{border-color:var(--accent);box-shadow:0 0 0 4px rgba(124,58,237,.12)}
 .table-wrap{overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:1520px}
+table{width:100%;border-collapse:collapse;min-width:1620px}
 th{text-align:left;font-size:13px;font-weight:700;color:var(--text3);letter-spacing:.5px;padding:10px 12px;border-bottom:2px solid var(--border2);white-space:nowrap}
 th .th-ico{margin-right:4px}
 td{padding:6px 8px;border-bottom:1px solid var(--border2);vertical-align:middle}
@@ -74,7 +74,23 @@ body.dark .cell.code{color:#b79cff}
 .chip-pdf{background:rgba(245,158,11,.12);color:#d97706;border-color:rgba(245,158,11,.35)}
 .chip-pdf:hover{background:rgba(245,158,11,.22)}
 body.dark .chip-pdf{color:#fbbf24}
+.chip-photo{background:rgba(16,185,129,.12);color:#059669;border-color:rgba(16,185,129,.35)}
+.chip-photo:hover{background:rgba(16,185,129,.22)}
+body.dark .chip-photo{color:#34d399}
+.photo-item{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border2);border-radius:12px;margin-bottom:10px}
+.photo-item img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--border2)}
+.photo-item .pinfo{flex:1;min-width:0}
+#qrLabel{background:#fff;color:#111;border:2px solid #111;border-radius:12px;padding:16px 22px;display:inline-block;min-width:230px;text-align:center}
+.ql-title{font-size:13px;font-weight:700;letter-spacing:1px}
+#qrImg img{width:150px;height:150px;margin:8px auto 6px;display:block}
+.ql-code{font-size:30px;font-weight:800;letter-spacing:2px;line-height:1.2}
+.ql-sub{font-size:13px;color:#444;margin-top:2px}
+.flash{animation:flashRow 2.2s ease}
+@keyframes flashRow{0%,55%{background:rgba(255,193,7,.5)}100%{background:transparent}}
+#printHost{display:none}
+@media print{body{background:#fff!important;padding:0!important}body>.container,body>.modal-backdrop,body>.toast{display:none!important}#printHost{display:block!important}#printHost .ql-code{font-size:34px}}
 .act-btn{width:34px;height:34px;border-radius:10px;border:1.5px solid var(--border2);background:transparent;font-size:15px;cursor:pointer;transition:all .2s}
+.act-qr:hover{border-color:var(--accent);box-shadow:0 4px 12px rgba(10,132,255,.3);transform:translateY(-2px)}
 .act-del:hover{border-color:var(--danger);box-shadow:0 4px 12px rgba(239,68,68,.3);transform:translateY(-2px)}
 .empty{text-align:center;padding:46px 0;color:var(--text3);font-size:15px}
 .modal-backdrop{position:fixed;inset:0;background:rgba(20,20,30,.55);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:50;padding:18px}
@@ -124,7 +140,7 @@ body.dark .chip-pdf{color:#fbbf24}
   <div class="card">
     <div class="toolbar">
       <button class="btn btn-add" id="addBtn">＋ 新增一行</button>
-      <button class="btn btn-backup" id="backupBtn" title="把全部資料打包成備份檔存到電腦">💾 備份到電腦</button>
+      <button class="btn btn-backup" id="backupBtn" title="把雲端全部資料匯出成 Excel 檔（.xlsx）">📊 匯出 Excel</button>
       <input id="search" class="search-input" placeholder="🔍 搜尋日期／編號／類別／產品…（點格子直接修改，自動同步雲端）">
     </div>
     <div class="table-wrap">
@@ -141,6 +157,7 @@ body.dark .chip-pdf{color:#fbbf24}
             <th><span class="th-ico">⚖️</span>重量g</th>
             <th><span class="th-ico">📏</span>夾箱距離</th>
             <th><span class="th-ico">📝</span>備註</th>
+            <th><span class="th-ico">📷</span>照片</th>
             <th><span class="th-ico">📄</span>PDF 圖面</th>
             <th><span class="th-ico">⚙️</span>操作</th>
           </tr>
@@ -175,8 +192,43 @@ body.dark .chip-pdf{color:#fbbf24}
       </div>
     </div>
     <iframe id="viewFrame" title="PDF 預覽"></iframe>
+    <div style="font-size:12px;color:var(--text3);padding:6px 12px;text-align:center">若預覽畫面空白，點右上角「⬇️ 下載」開啟檔案（部分手機不支援內建預覽）</div>
   </div>
 </div>
+
+<div class="modal-backdrop" id="photoModal" hidden>
+  <div class="modal pdf-modal">
+    <div class="modal-head">
+      <h2 id="photoModalTitle">照片管理</h2>
+      <button class="icon-btn" id="photoClose">✕</button>
+    </div>
+    <div style="padding:18px 22px;overflow-y:auto">
+      <label class="upload-btn">📷 上傳照片（可多選，自動壓縮）<input type="file" id="photoInput" accept="image/*" multiple hidden></label>
+      <div id="photoList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="qrModal" hidden>
+  <div class="modal pdf-modal">
+    <div class="modal-head">
+      <h2>🏷️ QR code 標籤</h2>
+      <button class="icon-btn" id="qrClose">✕</button>
+    </div>
+    <div style="padding:18px 22px;overflow-y:auto;text-align:center">
+      <div id="qrLabel">
+        <div class="ql-title">🏭 模具管理系統</div>
+        <div id="qrImg"></div>
+        <div class="ql-code" id="qrCodeText"></div>
+        <div class="ql-sub" id="qrSub"></div>
+      </div>
+      <div style="margin-top:14px"><button class="btn btn-add" id="qrPrint">🖨️ 列印標籤</button></div>
+      <div style="font-size:12.5px;color:var(--text3);margin-top:10px">列印後剪下貼在模具上，手機掃碼直接開啟這筆資料</div>
+    </div>
+  </div>
+</div>
+
+<div id="printHost"></div>
 
 <div class="toast ok" id="toast" hidden></div>
 
@@ -189,10 +241,18 @@ const BUCKET='mold-pdfs';
 let sb=null;
 try{sb=supabase.createClient(SB_URL,SB_KEY);}catch(e){}
 
-let records=[],currentRec=null,cloudOk=false;
+let records=[],currentRec=null,cloudOk=false,objUrl=null;
 const $=id=>document.getElementById(id);
 
 let dbPromise=null;
+function loadScript(src){
+  return new Promise((res,rej)=>{
+    if(window.document.querySelector('script[src="'+src+'"]')){res();return;}
+    const s=document.createElement('script');
+    s.src=src;s.onload=res;s.onerror=()=>rej(new Error('外部程式載入失敗'));
+    document.head.appendChild(s);
+  });
+}
 function dbOpen(){
   if(dbPromise)return dbPromise;
   dbPromise=new Promise((res,rej)=>{
@@ -209,7 +269,7 @@ function mirror(){try{localStorage.setItem(LS_CACHE,JSON.stringify(records));}ca
 function loadCache(){try{return JSON.parse(localStorage.getItem(LS_CACHE))||[];}catch(e){return[];}}
 
 function dbRowToLocal(r){
-  return {id:r.id,date:r.date||'',code:r.code||'',type:r.type||'',location:r.location||'',size:r.size||'',product:r.product||'',partNo:r.part_no||'',weight:r.weight||'',clamp:r.clamp_distance||'',note:r.note||'',pdfs:Array.isArray(r.pdfs)?r.pdfs:[]};
+  return {id:r.id,date:r.date||'',code:r.code||'',type:r.type||'',location:r.location||'',size:r.size||'',product:r.product||'',partNo:r.part_no||'',weight:r.weight||'',clamp:r.clamp_distance||'',note:r.note||'',pdfs:Array.isArray(r.pdfs)?r.pdfs:[],photos:Array.isArray(r.photos)?r.photos:[]};
 }
 
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -292,7 +352,7 @@ function render(){
     const cells=TEXT_COLS.map(([k,ph])=>`<td><div class="cell ${k==='date'?'date':''} ${k==='code'?'code':''} ${k==='note'?'note':''}" contenteditable="true" data-k="${k}" data-ph="${ph}">${esc(r[k])}</div></td>`);
     const typeCell=`<td><select class="type-sel" data-k="type"><option value=""${r.type?'':' selected'}>─ 選擇 ─</option>${TYPES.map(t=>`<option value="${t}"${r.type===t?' selected':''}>${t}</option>`).join('')}</select></td>`;
     const rowCells=cells[0]+cells[1]+typeCell+cells.slice(2).join('');
-    return `<tr data-id="${r.id}">${rowCells}<td><button class="chip chip-pdf" onclick="openPdfModal('${r.id}')">📄 ${r.pdfs.length}</button></td><td><button class="act-btn act-del" title="刪除此行" onclick="removeRecord('${r.id}')">🗑️</button></td></tr>`;
+    return `<tr data-id="${r.id}">${rowCells}<td><button class="chip chip-photo" onclick="openPhotoModal('${r.id}')">📷 ${(r.photos||[]).length}</button></td><td><button class="chip chip-pdf" onclick="openPdfModal('${r.id}')">📄 ${r.pdfs.length}</button></td><td><button class="act-btn act-qr" title="QR 標籤" onclick="openQrModal('${r.id}')">🏷️</button><button class="act-btn act-del" title="刪除此行" onclick="removeRecord('${r.id}')">🗑️</button></td></tr>`;
   }).join('');
 }
 
@@ -332,23 +392,19 @@ document.addEventListener('DOMContentLoaded',()=>{
 
   $('addBtn').onclick=addRow;
 
-  $('backupBtn').onclick=()=>{
-    if(!records.length){toast('目前沒有資料可備份',false);return;}
+  $('backupBtn').onclick=async()=>{
+    if(!records.length){toast('目前沒有資料可匯出',false);return;}
     try{
-      const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
-      const head=['日期','模具編號','模具類別','模具位置','模具呎吋','產品名稱','產品編號','重量g','夾箱距離','備註','PDF數量'];
-      const lines=[head.join(',')].concat(records.map(r=>[r.date,r.code,r.type,r.location,r.size,r.product,r.partNo,r.weight,r.clamp,r.note,r.pdfs.length].map(q).join(',')));
-      const csv='\uFEFF'+lines.join('\r\n');
-      const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');
-      a.href=url;
-      a.download='模具備份_'+today().replace(/-/g,'')+'.csv';
-      document.body.appendChild(a);a.click();a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url),4000);
-      toast('已備份 '+records.length+' 筆到電腦（可用 Excel 開啟）');
+      toast('Excel 產生中…');
+      await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
+      const rows=records.map(r=>({'日期':r.date,'模具編號':r.code,'模具類別':r.type,'模具位置':r.location,'模具尺寸':r.size,'產品名稱':r.product,'產品編號':r.partNo,'重量g':r.weight,'夾箱距離':r.clamp,'備註':r.note,'PDF數':r.pdfs.length,'照片數':(r.photos||[]).length}));
+      const ws=XLSX.utils.json_to_sheet(rows);
+      ws['!cols']=[{wch:11},{wch:12},{wch:10},{wch:10},{wch:14},{wch:16},{wch:12},{wch:8},{wch:10},{wch:22},{wch:7},{wch:7}];
+      const wb=XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb,ws,'模具清單');
+      XLSX.writeFile(wb,'模具管理表_'+today().replace(/-/g,'')+'.xlsx');
     }catch(e){
-      toast('備份失敗：'+e.message,false);
+      toast('匯出失敗：'+e.message,false);
     }
   };
 
@@ -390,12 +446,18 @@ document.addEventListener('DOMContentLoaded',()=>{
   $('viewClose').onclick=closeView;
   $('pdfModal').addEventListener('click',e=>{if(e.target===$('pdfModal'))closePdfModal();});
   $('viewModal').addEventListener('click',e=>{if(e.target===$('viewModal'))closeView();});
+  $('photoInput').addEventListener('change',handlePhotoFiles);
+  $('photoClose').onclick=closePhotoModal;
+  $('photoModal').addEventListener('click',e=>{if(e.target===$('photoModal'))closePhotoModal();});
+  $('qrClose').onclick=closeQrModal;
+  $('qrPrint').onclick=()=>window.print();
+  $('qrModal').addEventListener('click',e=>{if(e.target===$('qrModal'))closeQrModal();});
 
-  loadAll();
+  loadAll().then(highlightFromUrl);
 });
 
 async function addRow(){
-  const temp={date:today(),code:'',type:'',location:'',size:'',product:'',part_no:'',weight:'',clamp_distance:'',note:'',pdfs:[]};
+  const temp={date:today(),code:'',type:'',location:'',size:'',product:'',part_no:'',weight:'',clamp_distance:'',note:'',pdfs:[],photos:[]};
   let rec;
   if(cloudOk){
     const {data,error}=await sb.from('molds').insert(temp).select().single();
@@ -421,6 +483,8 @@ async function removeRecord(id){
         const paths=r.pdfs.map(p=>p.path).filter(Boolean);
         if(paths.length)await sb.storage.from(BUCKET).remove(paths);
       }
+      const ppaths=(r.photos||[]).map(p=>p.path).filter(Boolean);
+      if(ppaths.length)await sb.storage.from('mold-photos').remove(ppaths);
       const {error}=await sb.from('molds').delete().eq('id',id);
       if(error)throw error;
       setCloud(true);
@@ -464,26 +528,31 @@ function renderPdfList(){
 
 async function handleFiles(ev){
   if(!currentRec)return;
-  if(!cloudOk){toast('離線模式無法上傳 PDF，請先完成雲端設定',false);ev.target.value='';return;}
+  if(!cloudOk){toast('離線模式無法上傳 PDF，請先確認右上角顯示「雲端已連線」',false);ev.target.value='';return;}
   const files=[...ev.target.files];
   ev.target.value='';
+  let okCount=0;
   for(const f of files){
     if(f.type!=='application/pdf'&&!f.name.toLowerCase().endsWith('.pdf')){toast('略過非 PDF：'+f.name,false);continue;}
     const pid=uid('p');
-    const path=currentRec.id+'/'+pid+'_'+f.name;
+    const safe=f.name.replace(/[\\\/?#%&]+/g,'_');
+    const path=currentRec.id+'/'+pid+'_'+safe;
     try{
       const {error}=await sb.storage.from(BUCKET).upload(path,f,{contentType:'application/pdf'});
       if(error)throw error;
       currentRec.pdfs.push({id:pid,name:f.name,size:f.size,path:path,addedAt:Date.now()});
+      okCount++;
     }catch(e){
-      toast('上傳失敗：'+(e.message||f.name),false);
+      toast('上傳失敗「'+f.name+'」：'+(e.message||'未知錯誤'),false);
       continue;
     }
   }
-  const {error}=await sb.from('molds').update({pdfs:currentRec.pdfs}).eq('id',currentRec.id);
-  if(error)toast('檔案清單同步失敗',false);
+  if(okCount){
+    const {error}=await sb.from('molds').update({pdfs:currentRec.pdfs}).eq('id',currentRec.id);
+    if(error)toast('檔案已上傳，但清單同步失敗：'+error.message,false);
+    else toast('已上傳 '+okCount+' 個 PDF 到雲端');
+  }
   mirror();renderPdfList();render();
-  toast('PDF 已上傳到雲端');
 }
 
 function findPdfMeta(recId,pdfId){
@@ -535,6 +604,171 @@ async function deletePdf(recId,pdfId){
     toast('已刪除 PDF');
   }catch(e){
     toast('刪除失敗：'+e.message,false);
+  }
+}
+
+function openPhotoModal(id){
+  currentRec=records.find(x=>x.id===id);
+  if(!currentRec)return;
+  currentRec.photos=currentRec.photos||[];
+  $('photoModalTitle').textContent='📷 照片管理 — '+(currentRec.code||'未命名模具');
+  renderPhotoList();
+  $('photoModal').hidden=false;
+}
+function closePhotoModal(){$('photoModal').hidden=true;currentRec=null;}
+
+function photoUrl(path){
+  return sb.storage.from('mold-photos').getPublicUrl(path).data.publicUrl;
+}
+
+function renderPhotoList(){
+  const box=$('photoList');
+  if(!currentRec.photos.length){box.innerHTML='<div class="empty">尚未上傳任何照片</div>';return;}
+  box.innerHTML=currentRec.photos.map(p=>`
+    <div class="photo-item">
+      <img src="${photoUrl(p.path)}" alt="">
+      <div class="pinfo">
+        <div class="pname">${esc(p.name)}</div>
+        <div class="psize">${fmtSize(p.size)}　${new Date(p.addedAt).toLocaleString('zh-TW')}</div>
+      </div>
+      <button class="mini-btn mini-view" onclick="previewPhoto('${currentRec.id}','${p.id}')">👁 預覽</button>
+      <button class="mini-btn mini-dl" onclick="downloadPhoto('${currentRec.id}','${p.id}')">⬇ 下載</button>
+      <button class="mini-btn mini-del" onclick="deletePhoto('${currentRec.id}','${p.id}')">🗑</button>
+    </div>`).join('');
+}
+
+async function compressImage(file){
+  const url=URL.createObjectURL(file);
+  try{
+    const img=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('圖片讀取失敗'));i.src=url;});
+    const MAX=1600;
+    const s=Math.min(1,MAX/Math.max(img.naturalWidth,img.naturalHeight));
+    const c=document.createElement('canvas');
+    c.width=Math.max(1,Math.round(img.naturalWidth*s));
+    c.height=Math.max(1,Math.round(img.naturalHeight*s));
+    const ctx=c.getContext('2d');
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);
+    ctx.drawImage(img,0,0,c.width,c.height);
+    const blob=await new Promise(res=>c.toBlob(res,'image/jpeg',0.75));
+    if(!blob)throw new Error('壓縮失敗');
+    return blob;
+  }finally{
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function handlePhotoFiles(ev){
+  if(!currentRec)return;
+  if(!cloudOk){toast('離線模式無法上傳照片，請先完成雲端設定',false);ev.target.value='';return;}
+  const files=[...ev.target.files];
+  ev.target.value='';
+  let okCount=0;
+  for(const f of files){
+    if(f.type&&!f.type.startsWith('image/')){toast('略過非圖片：'+f.name,false);continue;}
+    const pid=uid('ph');
+    try{
+      const blob=await compressImage(f);
+      const path=currentRec.id+'/'+pid+'.jpg';
+      const {error}=await sb.storage.from('mold-photos').upload(path,blob,{contentType:'image/jpeg'});
+      if(error)throw error;
+      currentRec.photos.push({id:pid,name:f.name,size:blob.size,path:path,addedAt:Date.now()});
+      okCount++;
+    }catch(e){
+      toast('上傳失敗：'+(e.message||f.name),false);
+      continue;
+    }
+  }
+  if(okCount){
+    const {error}=await sb.from('molds').update({photos:currentRec.photos}).eq('id',currentRec.id);
+    if(error)toast('照片清單同步失敗',false);
+    toast('已上傳 '+okCount+' 張照片（自動壓縮）');
+  }
+  mirror();renderPhotoList();render();
+}
+
+function findPhotoMeta(recId,photoId){
+  const rec=records.find(x=>x.id===recId);
+  if(!rec)return null;
+  const meta=(rec.photos||[]).find(p=>p.id===photoId);
+  return meta?{rec,meta}:null;
+}
+
+function previewPhoto(recId,photoId){
+  const g=findPhotoMeta(recId,photoId);
+  if(!g||!g.meta.path){toast('找不到檔案',false);return;}
+  if(objUrl){URL.revokeObjectURL(objUrl);objUrl=null;}
+  const url=photoUrl(g.meta.path);
+  $('viewTitle').textContent='👁 '+g.meta.name;
+  $('viewFrame').src=url;
+  $('dlBtn').href=url;
+  $('dlBtn').download=g.meta.name;
+  $('viewModal').hidden=false;
+}
+
+async function downloadPhoto(recId,photoId){
+  const g=findPhotoMeta(recId,photoId);
+  if(!g||!g.meta.path){toast('找不到檔案',false);return;}
+  const url=photoUrl(g.meta.path);
+  try{
+    const res=await fetch(url);
+    const blob=await res.blob();
+    objUrl=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=objUrl;a.download=g.meta.name;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(objUrl),4000);
+  }catch(e){
+    window.open(url,'_blank');
+  }
+}
+
+async function deletePhoto(recId,photoId){
+  const g=findPhotoMeta(recId,photoId);
+  if(!g)return;
+  if(!confirm('刪除照片「'+g.meta.name+'」？'))return;
+  try{
+    if(g.meta.path)await sb.storage.from('mold-photos').remove([g.meta.path]);
+    g.rec.photos=g.rec.photos.filter(p=>p.id!==photoId);
+    const {error}=await sb.from('molds').update({photos:g.rec.photos}).eq('id',recId);
+    if(error)throw error;
+    mirror();renderPhotoList();render();
+    toast('已刪除照片');
+  }catch(e){
+    toast('刪除失敗：'+e.message,false);
+  }
+}
+
+let qrRec=null;
+async function openQrModal(id){
+  qrRec=records.find(x=>x.id===id);
+  if(!qrRec)return;
+  $('qrCodeText').textContent=qrRec.code||'（未填編號）';
+  $('qrSub').textContent=[qrRec.product,qrRec.location].filter(Boolean).join('　')||qrRec.date||'';
+  const url=location.origin+location.pathname+'?m='+qrRec.id;
+  try{
+    await loadScript('https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js');
+    const dataUrl=await QRCode.toDataURL(url,{width:300,margin:1,errorCorrectionLevel:'M'});
+    $('qrImg').innerHTML='<img src="'+dataUrl+'" alt="QR code">';
+    const host=$('printHost');
+    host.innerHTML='';
+    host.appendChild($('qrLabel').cloneNode(true));
+    $('qrModal').hidden=false;
+  }catch(e){
+    toast('QR code 產生失敗：'+e.message,false);
+  }
+}
+function closeQrModal(){$('qrModal').hidden=true;qrRec=null;}
+
+function highlightFromUrl(){
+  const mid=new URLSearchParams(location.search).get('m');
+  if(!mid)return;
+  const tr=$('tbody').querySelector('tr[data-id="'+mid+'"]');
+  if(tr){
+    tr.scrollIntoView({block:'center'});
+    tr.classList.add('flash');
+    setTimeout(()=>tr.classList.remove('flash'),2400);
+  }else{
+    toast('找不到連結指向的模具（可能已刪除）',false);
   }
 }
 
